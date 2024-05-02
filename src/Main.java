@@ -78,10 +78,11 @@ public class Main {
                 int[] sensorData;
                 sensorData = lightSensor.readSensorValues();
                 double linePosition = LFA.GetLinePosition(sensorData);
-                //System.out.printf("%n%d, %d, %d, %d, %d", sensorData[0],sensorData[1],sensorData[2],sensorData[3],sensorData[4]);
+
                 if (linePosition != -1.0) {
                     double lineSplitInversion = LFA.GetLinePositionSplitInversion(linePosition);
                     double angle = 0;
+
                     if (lineSplitInversion != 0) {
                         angle = LFA.GetAngle(lineSplitInversion, MIN_ANGLE, MAX_ANGLE, RATE);
                     }
