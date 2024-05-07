@@ -2,11 +2,8 @@ import com.pi4j.io.gpio.*;
 import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
 import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pi4j.io.i2c.I2CFactory;
-import com.pi4j.util.Console;
-import com.pi4j.wiringpi.Gpio;
 
 import java.io.IOException;
-import java.net.HttpCookie;
 
 public class Main {
     // Car Configurations
@@ -44,10 +41,6 @@ public class Main {
         //final boolean DEBUGGING = true;
         GpioController controller = GpioFactory.getInstance();
         LineFollowerAlgorithm LFA = new LineFollowerAlgorithm(MID_POINT);
-
-        // WORK IN PROGRESS FOR LATER
-        //ButtonsManager buttonManager = new ButtonsManager(controller);
-        //LedsManager ledManager = new LedsManager(controller);
 
         // GPIOS
         //Switches
