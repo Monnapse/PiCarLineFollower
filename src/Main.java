@@ -6,23 +6,44 @@ import com.pi4j.util.Console;
 import com.pi4j.wiringpi.Gpio;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 
 public class Main {
-    // Configurations
+    // Car Configurations
     static final Pin RED_SWITCH = RaspiPin.GPIO_26;
     static final Pin GREEN_SWITCH = RaspiPin.GPIO_25;
     static final Pin RED_LED = RaspiPin.GPIO_27;
     static final Pin GREEN_LED = RaspiPin.GPIO_24;
-    static final double MAX_ANGLE = 25.0;
+    static final int MID_POINT = 100; // Point where it separates the line
+    static boolean CarTurnedOn = false; // Does car turn on when it has power
+    static final int CPS = 140; // Cycles per second
+
+    // Servo Easing Configuration
+    static Servo servo = new Servo();
+    static final double MAX_ANGLE = 15.0;
     static final double MIN_ANGLE = 1;
-    static final double RATE = 35;
-    static final int MIDPOINT = 50;
-    static boolean CarTurnedOn = false;
+    static final double TURN_RATE = 25; // Turn rate the higher = more turn
+    static final int STRAIGHT_VALUE = 0; // Angle offset for going straight
+    static final EasingType SERVO_EASE_TYPE = EasingType.Quint;
+    static final EasingDirection SERVO_EASE_DIRECTION = EasingDirection.Out;
+    static final double SERVO_EASE_DURATION = 0.2;
+
+    // Motor Easing Configuration
+    static Motors motors = new Motors();
+    static final double SPEED_RATE = 10; // Higher = faster speed
+    static final EasingType MOTOR_EASE_TYPE = EasingType.Quart;
+    static final EasingDirection MOTOR_EASE_DIRECTION = EasingDirection.Out;
+    static final double MOTOR_EASE_DURATION = 0.25;
+
+    // Easing Services
+    static Easing servoEase = new Easing(SERVO_EASE_TYPE, SERVO_EASE_DIRECTION, SERVO_EASE_DURATION);
+    static Easing motorEase = new Easing(MOTOR_EASE_TYPE, MOTOR_EASE_DIRECTION, MOTOR_EASE_DURATION);
 
     public static void main(String[] args) throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException {
+
         //final boolean DEBUGGING = true;
         GpioController controller = GpioFactory.getInstance();
-        LineFollowerAlgorithm LFA = new LineFollowerAlgorithm(MIDPOINT);
+        LineFollowerAlgorithm LFA = new LineFollowerAlgorithm(MID_POINT);
 
         // WORK IN PROGRESS FOR LATER
         //ButtonsManager buttonManager = new ButtonsManager(controller);
@@ -36,12 +57,6 @@ public class Main {
         GpioPinDigitalOutput redLed = controller.provisionDigitalOutputPin(RED_LED, PinState.LOW);
         GpioPinDigitalOutput greenLed = controller.provisionDigitalOutputPin(GREEN_LED, PinState.LOW);
 
-        // Motor's
-        Motors motors = new Motors();
-
-        // Servo's
-        Servo servo = new Servo();
-
         // Sensor's
         LightSensorModule lightSensor = new LightSensorModule();
 
@@ -50,49 +65,79 @@ public class Main {
 
         System.out.println("PI Car Successfully Configured");
 
-        //buttonManager.ButtonHold(redSwitch, 2,new ButtonsManager.ButtonListener() {
-        //    @Override
-        //    public void handleButtonCallback() {
-        //        System.out.println("Held button for 2 seconds");
-        //        try {
-        //            ledManager.BlinkLed(redLed, 2, 500);
-        //        } catch (InterruptedException e) {
-        //            throw new RuntimeException(e);
-        //        }
-        //    }
-        //});
-
+        reset();
         greenSwitch.addListener(new GpioPinListenerDigital() {
             @Override
             public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
                 if (event.getState() == PinState.HIGH) {
                     CarTurnedOn = !CarTurnedOn;
-                    if (CarTurnedOn) {greenLed.setState(PinState.HIGH);}
+
+                    reset();
+
+                    if (CarTurnedOn) {
+                        greenLed.setState(PinState.HIGH);
+                    }
                     else {greenLed.setState(PinState.LOW);}
                 }
             }
         });
 
+        double neededAngle = 0; // For debugging
         while (true) {
+            // Updating the ease/tween method
+            servoEase.update();
+            motorEase.update();
+
             if (CarTurnedOn) {
+                // Get sensor data
                 int[] sensorData;
                 sensorData = lightSensor.readSensorValues();
                 double linePosition = LFA.GetLinePosition(sensorData);
 
+                // Get line position
                 if (linePosition != -1.0) {
                     double lineSplitInversion = LFA.GetLinePositionSplitInversion(linePosition);
-                    double angle = 0;
+                    double speed = LFA.GetSpeed(lineSplitInversion, SPEED_RATE);
+                    double angle = LFA.GetAngle(lineSplitInversion, MIN_ANGLE, MAX_ANGLE, TURN_RATE, STRAIGHT_VALUE);
 
-                    if (lineSplitInversion != 0) {
-                        angle = LFA.GetAngle(lineSplitInversion, MIN_ANGLE, MAX_ANGLE, RATE);
-                    }
-                    System.out.printf("%n Line Position: %.2f %n Line Split Inversion: %.2f %n Servo Angle: %.2f", linePosition, lineSplitInversion, angle);
+                    //if (lineSplitInversion != 0) {
+                    //    angle = LFA.GetAngle(lineSplitInversion, MIN_ANGLE, MAX_ANGLE, TURN_RATE, STRAIGHT_VALUE);
+                    //}
+                    //System.out.printf("%n Line Position: %.2f %n Line Split Inversion: %.2f %n Servo Angle: %.2f", linePosition, lineSplitInversion, angle);
 
-                    servo.setServoAngle((int) angle);
+                    // Motor
+                    int desiredSpeed = (int) Math.min(Math.abs(speed), 100);
+                    //System.out.printf("%n Speed: %s, Desired Speed: %s %n", speed, desiredSpeed);
+                    motorEase.changeValue(desiredSpeed);
+
+                    // Servo
+                    int desiredAngle = (int) angle;
+                    servoEase.changeValue(desiredAngle);
+                    neededAngle = angle;
+                    //System.out.println("Setting servo angle to: " + String.valueOf(angle));
+                    //servo.setServoAngle((int) angle);
                 }
+
+                // Update Servo
+                int actualAngle = (int) servoEase.getActualValue();
+                System.out.printf("%n End Angle: %s, Actual Angle: %s %n", neededAngle, actualAngle);
+                servo.setServoAngle((int) actualAngle);
+
+                // Update Motor
+                int actualSpeed = (int) motorEase.getActualValue();
+                //System.out.printf("%n Speed: %s%n", actualSpeed);
+                motors.runMotors("forward", actualSpeed);
             }
 
-            Thread.sleep(250);
+            Thread.sleep((1/CPS)*1000);
+            //System.out.println("CYCLED");
+            //Thread.sleep(10);
         }
+    }
+    public static void reset() {
+        servo.setServoAngle(STRAIGHT_VALUE);
+        motors.runMotors("forward", 0);
+        servoEase.setValue(0, STRAIGHT_VALUE);
+        motorEase.setValue(0, 0);
     }
 }
