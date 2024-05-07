@@ -3,13 +3,6 @@
     Made by Mason Huber
     Formula's Made by Robert Penner
 */
-
-/**
- * Smoothly ease a value.
- * @param easeType The type of easing to be used.
- * @param easeDirection The direction of the easeType.
- * @param duration The duration of the ease.
- */
 public class Easing {
     private EasingType easeType;
     private EasingDirection easeDirection;
@@ -25,6 +18,12 @@ public class Easing {
     private boolean isBeingUpdated;
     int normal;
 
+    /**
+     * Smoothly ease a value.
+     * @param easeType The type of easing to be used.
+     * @param easeDirection The direction of the easeType.
+     * @param duration The duration of the ease.
+     */
     public Easing(EasingType easeType, EasingDirection easeDirection, double duration) {
         this.easeType = easeType;
         this.easeDirection = easeDirection;
