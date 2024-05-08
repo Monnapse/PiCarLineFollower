@@ -27,23 +27,25 @@ public class LineFollowerAlgorithm {
         }
 
         int sensorsOverLine = detectedSensorsOverLine.size();
-//
+        double divisor = 100.0/(sensorCount-1);
+
         if (sensorsOverLine > 1) {
             //int mid = sensorCount/2;
             //int point = detectedSensorsOverLine.get(0);//getMidpoint(sensorsOverLine, detectedSensorsOverLine);
             double sum = 0;
 
-            for (int i = 0; i < Math.min(sensorsOverLine, (sensorCount*2-1)); i++) {
+            for (int i = 0; i < 2; i++) {
                 int point = detectedSensorsOverLine.get(i);
+                //System.out.println(point);
                 sum += point;
             }
 
             //System.out.printf("%nSENSOR OVER LINE COUNT: %s, SENSORS: %s, POINT: %s%n", sensorsOverLine, detectedSensorsOverLine, sum/2.0);
-            int divisor = 100/(sensorCount-1);
-            return (double) Math.min(((sum/2.0) * divisor)/100, 1);
+
+            return (double) Math.min(((sum/2.0) * divisor)/100.0, 1);
         } else if (sensorsOverLine == 1) {
-            int divisor = 100/(sensorCount-1);
-            return (double) Math.min((detectedSensorsOverLine.get(0) * divisor)/100, 1);
+            //System.out.printf("%nSENSOR OVER LINE COUNT: %s, SENSOR: %s, SENSOR VALUE: %s%n", sensorsOverLine, detectedSensorsOverLine, detectedSensorsOverLine.get(0));
+            return (double) Math.min((detectedSensorsOverLine.get(0) * divisor)/100.0, 1);
         }
 
         return -1.0;
@@ -53,9 +55,9 @@ public class LineFollowerAlgorithm {
         return (-position*2+1)*-1;
     }
 
-    public double GetAngle(double percentage, double minAngle, double maxAngle, double rate, double straightOffset) {
+    public double GetAngleV1(double percentage, double m1, double m2, double maxAngle, double rate, double straightOffset) {
         if (percentage == 0) { return straightOffset; }
-        double angle = Math.min(Math.abs(((minAngle / maxAngle) + Math.pow(percentage, 2))*rate), maxAngle);
+        double angle = Math.min(Math.abs(((m1 / m2) + Math.pow(percentage, 2))*rate), maxAngle);
         if (percentage > 0 && straightOffset > 0) {
             angle += straightOffset;
         } else if (percentage < 0) {
@@ -65,6 +67,16 @@ public class LineFollowerAlgorithm {
             }
         }
         return angle;
+    }
+    public double GetAngleV2(double percentage, double rate, double maxAngle) {
+        double x = Math.abs(percentage);
+        if (x == 0) { return 0; }
+        //double angle = Math.min(Math.sqrt(1-Math.pow(x - 1, 2) * rate), 1);
+        double angle = Math.min(1-(1-x)*(1-x)*rate, 1);
+        if (percentage < 0) {
+            angle *= -1;
+        }
+        return angle * maxAngle;
     }
 
     public double GetSpeed(double percentage, double rate) {
