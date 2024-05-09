@@ -14,25 +14,25 @@ public class Main {
     static final int MID_POINT = 55; // Point where it separates the line
     static boolean CarTurnedOn = false; // Does car turn on when it has power
     static boolean MotorsTurnedOff = false; // If motors work when car is turned on
-    static final int CPS = 140; // Cycles per second
+    static final int CPS = 190; // Cycles per second
 
     // Servo Easing Configuration
     static Servo servo = new Servo();
-    static final double MAX_ANGLE = 20.0;
-    static final double M2 = 7;
-    static final double M1 = 1;
-    static final double TURN_RATE = 2; // Turn rate the higher = more turn
+    static final double MAX_ANGLE = 21.0;
+    //static final double M2 = 7;
+    //static final double M1 = 1;
+    static final double TURN_RATE = 2.5; // Turn rate, lower = more turn
     static final int STRAIGHT_VALUE = 0; // Angle offset for going straight
-    static final EasingType SERVO_EASE_TYPE = EasingType.Back;
+    static final EasingType SERVO_EASE_TYPE = EasingType.Quart;
     static final EasingDirection SERVO_EASE_DIRECTION = EasingDirection.Out;
-    static final double SERVO_EASE_DURATION = 0.2;
+    static final double SERVO_EASE_DURATION = 0.01;
 
     // Motor Easing Configuration
     static Motors motors = new Motors();
-    static final double SPEED_RATE = 10; // Higher = faster speed
+    static final double SPEED_RATE = 8; // Higher = faster speed
     static final EasingType MOTOR_EASE_TYPE = EasingType.Quart;
     static final EasingDirection MOTOR_EASE_DIRECTION = EasingDirection.Out;
-    static final double MOTOR_EASE_DURATION = 0.2;
+    static final double MOTOR_EASE_DURATION = 0.01;
 
     // Easing Services
     static Easing servoEase = new Easing(SERVO_EASE_TYPE, SERVO_EASE_DIRECTION, SERVO_EASE_DURATION);
